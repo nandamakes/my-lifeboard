@@ -4,6 +4,7 @@ import { Line } from "react-chartjs-2";
 import "chart.js/auto";
 import * as stats from "simple-statistics";
 import Wins from "./components/Wins.jsx";
+import Insights from "./components/Insights.jsx";
 
 /** ========= SUPABASE CLIENT ========= */
 const supabase = createClient(
@@ -345,7 +346,7 @@ export default function App(){
 
       {/* Tabs */}
      <div className="mt-4 flex gap-2">
-        {["today","trends","wins"].map(t => (
+        {["today","trends","wins","insights"].map(t => (
           <button key={t} onClick={()=>setTab(t)}
             className="rounded-full px-4 py-1.5 text-sm border"
             style={{ borderColor: tab===t?tokens.primaryDark:tokens.divider, background: tab===t?tokens.primaryDark:"transparent", color: tokens.text }}>
@@ -443,6 +444,8 @@ export default function App(){
     addWin={addWin}
     deleteWin={deleteWin}
   />
+) : tab === "insights" ? (
+  <Insights tokens={tokens} days={days} />
 ) : (
   /* ============ TRENDS VIEW ============ */
   <div className="mt-5 grid grid-cols-1 xl:grid-cols-2 gap-6">

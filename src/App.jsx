@@ -373,8 +373,6 @@ export default function App(){
   return (
     <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8 pb-28" style={{ background: tokens.bg, color: tokens.text, fontFamily: "ui-sans-serif, system-ui" }}>
       {/* Header */}
-      {/* Quick Add FAB (mobile & desktop) */}
-      <QuickFab onClick={() => setShowQuick(true)} />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="text-2xl sm:text-3xl font-semibold">My Lifeboard</div>
         <div className="flex items-center gap-3 ml-auto">

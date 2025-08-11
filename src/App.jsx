@@ -75,18 +75,67 @@ const Select=({value,onChange,options})=>(
 );
 const YesNo=({value,onChange})=>(<Select value={value?"Yes":"No"} onChange={e=>onChange(e.target.value==="Yes")} options={["No","Yes"]}/>);
 
-function Sheet({title,children,onClose,onSave}){ return (
-  <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{background:"rgba(0,0,0,0.5)"}}>
-    <div className="w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl p-5" style={{background:tokens.surfaceAlt,color:tokens.text}}>
-      <div className="flex items-center justify-between mb-3"><h3 className="text-lg font-semibold">{title}</h3>
-        <button onClick={onClose} className="text-sm" style={{color:tokens.textSecondary}}>Close</button></div>
-      <div className="space-y-3">{children}</div>
-      <div className="mt-5 flex justify-end gap-2">
-        <button onClick={onClose} className="rounded-xl px-4 py-2 border" style={{borderColor:tokens.divider,color:tokens.textSecondary}}>Cancel</button>
-        <button onClick={onSave} className="rounded-xl px-4 py-2" style={{background:tokens.primaryDark,color:tokens.text}}>Save</button>
+function Sheet({ title, children, onClose, onSave }) {
+  const [el, setEl] = useState(null);
+
+  // when it opens, snap to top
+  useEffect(() => {
+    if (el) el.scrollTop = 0;
+  }, [el]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.5)", touchAction: "pan-y" }}  // allow vertical pan
+    >
+      <div
+        className="w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl"
+        style={{ background: tokens.surfaceAlt, color: tokens.text }}
+      >
+        <div className="p-5 border-b" style={{ borderColor: tokens.divider }}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">{title}</h3>
+            <button onClick={onClose} className="text-sm" style={{ color: tokens.textSecondary }}>
+              Close
+            </button>
+          </div>
+        </div>
+
+        {/* scrollable content area */}
+        <div
+          ref={setEl}
+          className="px-5"
+          style={{
+            maxHeight: "80dvh",           // important: use dynamic viewport on mobile
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain" // keep scroll inside the sheet
+          }}
+        >
+          <div className="py-4 space-y-3">{children}</div>
+        </div>
+
+        <div className="p-5 flex justify-end gap-2 border-t" style={{ borderColor: tokens.divider }}>
+          <button
+            onClick={onClose}
+            className="rounded-xl px-4 py-2 border"
+            style={{ borderColor: tokens.divider, color: tokens.textSecondary }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSave}
+            className="rounded-xl px-4 py-2"
+            style={{ background: tokens.primaryDark, color: tokens.text }}
+          >
+            Save
+          </button>
+        </div>
       </div>
     </div>
-  </div>); }
+  );
+}
+
 
 /** ========= SERVER HELPERS (entries + wins) ========= */
 async function signInMagic(email){ const { error } = await supabase.auth.signInWithOtp({ email, options:{ emailRedirectTo: window.location.origin } }); if(error) throw error; }

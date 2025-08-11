@@ -407,23 +407,47 @@ export default function App(){
             <Tile title="Financial" value={today.s.fin}  subtext={todaySub.financial} series={finSeries7} />
           </div>
 
+          {/* Actions bar */}
           <div className="sticky bottom-3 mt-6 flex gap-3 flex-wrap md:pr-28">
-          <button onClick={()=>{ setDraftAM(draftAMInit()); setShowAM(true); }} className="rounded-xl px-4 py-2 text-sm shadow active:scale-95" style={{ background: tokens.primaryDark, color: tokens.text }}>
-            AM LOG
-          </button>
-          <button onClick={()=>{ setDraftPM(draftPMInit()); setShowPM(true); }} className="rounded-xl px-4 py-2 text-sm shadow active:scale-95" style={{ background: tokens.primaryDark, color: tokens.text }}>
-            PM LOG
-          </button>
-
-          {/* Quick Add as a bar button on mobile */}
-           <button
-            onClick={()=> setShowQuick(true)}
-            className="rounded-xl px-4 py-2 text-sm shadow active:scale-95 md:hidden"
-            style={{ background: tokens.primaryDark, color: tokens.text }}
+            <button
+              onClick={()=>{ setDraftAM(draftAMInit()); setShowAM(true); }}
+              className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
+              style={{ background: tokens.primaryDark, color: tokens.text }}
             >
-            + Quick Add
-          </button>
-        </div>
+              AM LOG
+            </button>
+
+            <button
+              onClick={()=>{ setDraftPM(draftPMInit()); setShowPM(true); }}
+              className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
+              style={{ background: tokens.primaryDark, color: tokens.text }}
+            >
+              PM LOG
+            </button>
+
+            {/* + WIN back on mobile */}
+            <button
+              onClick={async()=>{
+                const text = window.prompt("Win text:");
+                if (!text) return;
+                try { await addWinServer(text); alert("Win saved ✨"); } catch (e) { alert(e.message); }
+              }}
+              className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
+              style={{ background: tokens.primaryDark, color: tokens.text }}
+            >
+              + WIN
+            </button>
+
+            {/* Quick Add as bar button on mobile only */}
+            <button
+              onClick={()=> setShowQuick(true)}
+              className="rounded-xl px-4 py-2 text-sm shadow active:scale-95 md:hidden"
+              style={{ background: tokens.primaryDark, color: tokens.text }}
+            >
+              + Quick Add
+            </button>
+          </div>
+
 
           {/* AM & PM Sheets */}
           {showAM && (

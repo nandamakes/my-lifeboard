@@ -8,10 +8,19 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png'],
-      manifest: '/manifest.webmanifest',
-      workbox: {
-        // cache static assets; let Supabase calls pass online
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+      manifest: {
+        name: 'My Lifeboard',
+        short_name: 'Lifeboard',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        background_color: '#1E1B1B',
+        theme_color: '#B56576',
+        icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+        ]
       }
     })
   ]

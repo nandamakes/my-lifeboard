@@ -7,25 +7,31 @@ export default function BottomNav({ tab, setTab, tokens }) {
     { key: "wins",     label: "Wins",     Icon: TrophyIcon },
     { key: "insights", label: "Insights", Icon: LightbulbIcon },
   ];
+
   return (
     <nav className="fixed inset-x-0 bottom-0 md:hidden z-40"
-         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)" }}>
-      <div className="mx-auto max-w-xl rounded-2xl m-3 px-2 py-2 flex justify-between gap-2"
+         style={{
+           paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)",
+           paddingLeft:  "calc(env(safe-area-inset-left) + 8px)",
+           paddingRight: "calc(env(safe-area-inset-right) + 8px)"
+         }}>
+      <div className="rounded-2xl mx-2 px-2 py-2 flex gap-2"
            style={{ background: "#2c2626", border: `1px solid ${tokens.primaryDark}`,
                     boxShadow: "0 8px 24px rgba(0,0,0,.35)" }}>
         {items.map(({ key, label, Icon }) => (
           <button key={key} onClick={()=>setTab(key)}
-            className="flex-1 rounded-xl px-3 py-2 text-sm flex items-center justify-center gap-1.5"
+            className="basis-1/4 min-w-0 rounded-xl px-2 py-2 text-xs flex items-center justify-center gap-1.5"
             style={{
               background: tab===key ? tokens.primaryDark : "transparent",
               border: `1px solid ${tab===key ? tokens.primaryDark : "#4B4343"}`,
               color: tokens.text
             }}>
-            <Icon size={18} />
-            <span>{label}</span>
+            <Icon size={16} />
+            <span className="truncate">{label}</span>
           </button>
         ))}
       </div>
     </nav>
   );
 }
+

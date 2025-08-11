@@ -84,11 +84,16 @@ const Textarea = (p) => (
   />
 );
 
-function QuickFab({ onClick }) {
+function QuickFab({ onClick, className = "" }) 
+{/* Floating FAB (desktop only) */}
+<QuickFab className="hidden md:block" onClick={() => setShowQuick(true)} />
+{
   return (
-    <button onClick={onClick}
-      className="fixed bottom-5 right-5 z-40 rounded-full shadow-lg px-5 py-3 text-sm md:text-base active:scale-95"
-      style={{ background: tokens.primaryDark, color: tokens.text, border: `1px solid ${tokens.primary}` }}>
+    <button
+      onClick={onClick}
+      className={`fixed bottom-5 right-5 z-40 rounded-full shadow-lg px-5 py-3 text-sm md:text-base active:scale-95 ${className}`}
+      style={{ background: tokens.primaryDark, color: tokens.text, border: `1px solid ${tokens.primary}` }}
+    >
       + Quick Add
     </button>
   );
@@ -368,7 +373,7 @@ export default function App(){
   const chips = computeCorrelations(days);
 
   return (
-    <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8" style={{ background: tokens.bg, color: tokens.text, fontFamily: "ui-sans-serif, system-ui" }}>
+    <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8 pb-24" style={{ background: tokens.bg, color: tokens.text, fontFamily: "ui-sans-serif, system-ui" }}>
       {/* Header */}
       {/* Quick Add FAB (mobile & desktop) */}
       <QuickFab onClick={() => setShowQuick(true)} />
@@ -405,11 +410,22 @@ export default function App(){
           </div>
 
           <div className="sticky bottom-3 mt-6 flex gap-3 flex-wrap">
-            <button onClick={()=>{ setDraftAM(draftAMInit()); setShowAM(true); }} className="rounded-xl px-4 py-2 text-sm shadow active:scale-95" style={{ background: tokens.primaryDark, color: tokens.text }}>AM LOG</button>
-            <button onClick={()=>{ setDraftPM(draftPMInit()); setShowPM(true); }} className="rounded-xl px-4 py-2 text-sm shadow active:scale-95" style={{ background: tokens.primaryDark, color: tokens.text }}>PM LOG</button>
-            <button onClick={async()=>{ const text=window.prompt("Win text:"); if(!text) return; try{ await addWinServer(text); alert("Win saved ✨"); } catch(e){ alert(e.message); } }}
-              className="rounded-xl px-4 py-2 text-sm shadow active:scale-95" style={{ background: tokens.primaryDark, color: tokens.text }}>+ WIN</button>
-          </div>
+          <button onClick={()=>{ setDraftAM(draftAMInit()); setShowAM(true); }} className="rounded-xl px-4 py-2 text-sm shadow active:scale-95" style={{ background: tokens.primaryDark, color: tokens.text }}>
+            AM LOG
+          </button>
+          <button onClick={()=>{ setDraftPM(draftPMInit()); setShowPM(true); }} className="rounded-xl px-4 py-2 text-sm shadow active:scale-95" style={{ background: tokens.primaryDark, color: tokens.text }}>
+            PM LOG
+          </button>
+
+          {/* Quick Add as a bar button on mobile */}
+          <button
+            onClick={()=> setShowQuick(true)}
+            className="rounded-xl px-4 py-2 text-sm shadow active:scale-95 md:hidden"
+            style={{ background: tokens.primaryDark, color: tokens.text }}
+          >
+            + Quick Add
+          </button>
+        </div>
 
           {/* AM & PM Sheets */}
           {showAM && (

@@ -84,20 +84,18 @@ const Textarea = (p) => (
   />
 );
 
-function QuickFab({ onClick, className = "" }) 
-{/* Floating FAB (desktop only) */}
-<QuickFab className="hidden md:block" onClick={() => setShowQuick(true)} />
-{
+function QuickFab({ onClick, className = "" }) {
   return (
     <button
       onClick={onClick}
-      className={`fixed bottom-5 right-5 z-40 rounded-full shadow-lg px-5 py-3 text-sm md:text-base active:scale-95 ${className}`}
+      className={`fixed bottom-5 right-5 z-30 rounded-full shadow-lg px-5 py-3 text-sm md:text-base active:scale-95 ${className}`}
       style={{ background: tokens.primaryDark, color: tokens.text, border: `1px solid ${tokens.primary}` }}
     >
       + Quick Add
     </button>
   );
 }
+
 
 /** ========= SHEET (mobile scrollable) ========= */
 function Sheet({ title, children, onClose, onSave }) {
@@ -373,7 +371,7 @@ export default function App(){
   const chips = computeCorrelations(days);
 
   return (
-    <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8 pb-24" style={{ background: tokens.bg, color: tokens.text, fontFamily: "ui-sans-serif, system-ui" }}>
+    <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8 pb-28" style={{ background: tokens.bg, color: tokens.text, fontFamily: "ui-sans-serif, system-ui" }}>
       {/* Header */}
       {/* Quick Add FAB (mobile & desktop) */}
       <QuickFab onClick={() => setShowQuick(true)} />
@@ -409,7 +407,7 @@ export default function App(){
             <Tile title="Financial" value={today.s.fin}  subtext={todaySub.financial} series={finSeries7} />
           </div>
 
-          <div className="sticky bottom-3 mt-6 flex gap-3 flex-wrap">
+          <div className="sticky bottom-3 mt-6 flex gap-3 flex-wrap md:pr-28">
           <button onClick={()=>{ setDraftAM(draftAMInit()); setShowAM(true); }} className="rounded-xl px-4 py-2 text-sm shadow active:scale-95" style={{ background: tokens.primaryDark, color: tokens.text }}>
             AM LOG
           </button>
@@ -418,11 +416,11 @@ export default function App(){
           </button>
 
           {/* Quick Add as a bar button on mobile */}
-          <button
+           <button
             onClick={()=> setShowQuick(true)}
             className="rounded-xl px-4 py-2 text-sm shadow active:scale-95 md:hidden"
             style={{ background: tokens.primaryDark, color: tokens.text }}
-          >
+            >
             + Quick Add
           </button>
         </div>
@@ -534,6 +532,8 @@ export default function App(){
           </div>
         </div>
       )}
+    {/* Floating FAB (desktop only) */}
+    <QuickFab className="hidden md:block" onClick={() => setShowQuick(true)} />
     </div>
   );
 }

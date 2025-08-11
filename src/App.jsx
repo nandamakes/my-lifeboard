@@ -345,7 +345,16 @@ export default function App(){
   const chips = computeCorrelations(days);
 
   return (
-    <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8 pb-32" style={{ background: tokens.bg, color: tokens.text, fontFamily: "ui-sans-serif, system-ui" }}>
+    <div
+    className="min-h-screen w-full p-4 sm:p-6 lg:p-8 md:pb-8"
+    style={{
+      background: tokens.bg,
+      color: tokens.text,
+      fontFamily: "ui-sans-serif, system-ui",
+      paddingBottom: "calc(var(--bottom-nav-h, 96px) + 8px)" // key line
+    }}
+    >
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="text-2xl sm:text-3xl font-semibold">My Lifeboard</div>

@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import { TodayIcon, TrendsIcon, TrophyIcon, LightbulbIcon } from "./Icons.jsx";
 
 export default function BottomNav({ tab, setTab, tokens }) {
@@ -8,16 +9,33 @@ export default function BottomNav({ tab, setTab, tokens }) {
     { key: "insights", label: "Insights", Icon: LightbulbIcon },
   ];
 
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const setVar = () => {
+      if (ref.current) {
+        const h = ref.current.offsetHeight; // includes safe-area padding
+        document.documentElement.style.setProperty("--bottom-nav-h", `${h}px`);
+      }
+    };
+    setVar();
+    const ro = new ResizeObserver(setVar);
+    if (ref.current) ro.observe(ref.current);
+    window.addEventListener("orientationchange", setVar);
+    return () => { ro.disconnect(); window.removeEventListener("orientationchange", setVar); };
+  }, []);
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 md:hidden z-40"
-         style={{
-           paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)",
-           paddingLeft:  "calc(env(safe-area-inset-left) + 8px)",
-           paddingRight: "calc(env(safe-area-inset-right) + 8px)"
-         }}>
+    <nav
+      ref={ref}
+      className="fixed inset-x-0 bottom-0 md:hidden z-40"
+      style={{
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)",
+        paddingLeft:  "calc(env(safe-area-inset-left) + 8px)",
+        paddingRight: "calc(env(safe-area-inset-right) + 8px)"
+      }}
+    >
       <div className="rounded-2xl mx-2 px-2 py-2 flex gap-2"
-           style={{ background: "#2c2626", border: `1px solid ${tokens.primaryDark}`,
-                    boxShadow: "0 8px 24px rgba(0,0,0,.35)" }}>
+           style={{ background:"#2c2626", border:`1px solid ${tokens.primaryDark}`, boxShadow:"0 8px 24px rgba(0,0,0,.35)" }}>
         {items.map(({ key, label, Icon }) => (
           <button key={key} onClick={()=>setTab(key)}
             className="basis-1/4 min-w-0 rounded-xl px-2 py-2 text-xs flex items-center justify-center gap-1.5"
@@ -34,4 +52,3 @@ export default function BottomNav({ tab, setTab, tokens }) {
     </nav>
   );
 }
-

@@ -77,6 +77,22 @@ const Select=({value,onChange,options})=>(
   </select>
 );
 const YesNo=({value,onChange})=>(<Select value={value?"Yes":"No"} onChange={e=>onChange(e.target.value==="Yes")} options={["No","Yes"]}/>);
+const Textarea = (p) => (
+  <textarea {...p} rows={3}
+    className="rounded-lg px-3 py-2 bg-transparent border w-full"
+    style={{ borderColor: tokens.divider, color: tokens.text }}
+  />
+);
+
+function QuickFab({ onClick }) {
+  return (
+    <button onClick={onClick}
+      className="fixed bottom-5 right-5 z-40 rounded-full shadow-lg px-5 py-3 text-sm md:text-base active:scale-95"
+      style={{ background: tokens.primaryDark, color: tokens.text, border: `1px solid ${tokens.primary}` }}>
+      + Quick Add
+    </button>
+  );
+}
 
 /** ========= SHEET (mobile scrollable) ========= */
 function Sheet({ title, children, onClose, onSave }) {
@@ -99,6 +115,8 @@ function Sheet({ title, children, onClose, onSave }) {
           <button onClick={onSave} className="rounded-xl px-4 py-2" style={{ background: tokens.primaryDark, color: tokens.text }}>Save</button>
         </div>
       </div>
+            {/* Quick Add FAB (mobile & desktop) */}
+      <QuickFab onClick={() => setShowQuick(true)} />
     </div>
   );
 }
@@ -118,6 +136,19 @@ async function fetchEntriesLast30Server(){
 async function addWinServer(text, tag){
   const { data: u } = await supabase.auth.getUser(); if(!u?.user) throw new Error("Not signed in");
   const { error } = await supabase.from("wins").insert({ user_id:u.user.id, text, tag: tag??null }); if(error) throw error;
+}
+
+/** ========= QUICK ADD HELPERS ========= */
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function periodNow() {
+  const h = new Date().getHours();
+  return h < 14 ? "AM" : "PM"; // simple split; tweak if you want
 }
 
 /** ========= CORRELATIONS (last 30d) ========= */
@@ -205,6 +236,34 @@ export default function App(){
     return ()=> sub.subscription.unsubscribe();
   },[]);
 
+  async function saveQuickAdd() {
+  const date = today?.d?.date || todayISO();
+  const period = periodNow();
+
+  // Build patch for entry JSON
+  const patch = {
+    // use mood into AM or PM depending on period
+    ...(period === "AM" ? { moodAM: +quick.mood, energyAM: +quick.energy } : { moodPM: +quick.mood, energyPM: +quick.energy }),
+    notes: quick.notes || undefined,
+  };
+
+  // local update
+  upsertTodayLocal(patch);
+
+  // server upsert
+  try {
+    await upsertEntryServer(date, period, patch);
+    if (quick.winText?.trim()) {
+      await addWinServer(quick.winText.trim());
+    }
+    setShowQuick(false);
+    // soft reset
+    setQuick({ mood: +quick.mood, energy: +quick.energy, winText: "", notes: "" });
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
   const [days,setDays]=useState(seed);
   useEffect(()=>{ (async()=>{
     if(!session?.user) return;
@@ -249,6 +308,15 @@ export default function App(){
                              stepsBand: today.d?.stepsBand || "3-7k", spendState: today.d?.spendState || "On", cashClarity: !!today.d?.cashClarity });
   const [draftAM,setDraftAM]=useState(draftAMInit()); const [draftPM,setDraftPM]=useState(draftPMInit());
   function upsertTodayLocal(patch){ const date=today.d.date; setDays(prev=>prev.map(d=>d.date===date?{...d,...patch}:d)); }
+
+  // Quick Add state
+  const [showQuick, setShowQuick] = useState(false);
+  const [quick, setQuick] = useState({
+    mood: today?.d?.moodPM ?? today?.d?.moodAM ?? 6,
+    energy: today?.d?.energyPM ?? today?.d?.energyAM ?? 6,
+    winText: "",
+    notes: "",
+  });
 
   // Auth gate
   if(!session){
@@ -380,6 +448,29 @@ export default function App(){
                 <Field label="Cash clarity"><YesNo value={draftPM.cashClarity} onChange={v=>setDraftPM({...draftPM,cashClarity:v})}/></Field>
               </div>
             </Sheet>
+
+                        {/* Quick Add Sheet */}
+            {showQuick && (
+              <Sheet title="Quick Add" onClose={() => setShowQuick(false)} onSave={saveQuickAdd}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label={`Mood (${quick.mood})`}>
+                    <Slider value={quick.mood} onChange={(e)=>setQuick({...quick, mood:+e.target.value})} />
+                  </Field>
+                  <Field label={`Energy (${quick.energy})`}>
+                    <Slider value={quick.energy} onChange={(e)=>setQuick({...quick, energy:+e.target.value})} />
+                  </Field>
+                  <Field label="Win (optional)">
+                    <Textarea placeholder="What went right?" value={quick.winText} onChange={(e)=>setQuick({...quick, winText:e.target.value})}/>
+                  </Field>
+                  <Field label="Notes (optional)">
+                    <Textarea placeholder="Any quick note…" value={quick.notes} onChange={(e)=>setQuick({...quick, notes:e.target.value})}/>
+                  </Field>
+                </div>
+                <div className="mt-2 text-xs" style={{ color: tokens.textSecondary }}>
+                  Saving to <b>{periodNow()}</b> for <b>{today?.d?.date || todayISO()}</b>
+                </div>
+              </Sheet>
+            
           )}
         </>
       ) : (

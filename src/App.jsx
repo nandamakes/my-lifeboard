@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Line } from "react-chartjs-2";
 import "chart.js/auto";
 import * as stats from "simple-statistics";
+import Wins from "./components/Wins.jsx";
 
 /** ========= SUPABASE CLIENT ========= */
 const supabase = createClient(
@@ -125,7 +126,28 @@ async function addWinServer(text, tag){
   const { data: u } = await supabase.auth.getUser(); if(!u?.user) throw new Error("Not signed in");
   const { error } = await supabase.from("wins").insert({ user_id:u.user.id, text, tag: tag??null }); if(error) throw error;
 }
+async function fetchWinsNDays(days = 30) {
+  const since = new Date(Date.now() - (days - 1) * 24 * 3600 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("wins")
+    .select("id, ts, text, tag")
+    .gte("ts", since)
+    .order("ts", { ascending: false });
+  if (error) throw error;
+  return data;
+}
 
+async function addWin(text, tag) {
+  const { data: u } = await supabase.auth.getUser();
+  if (!u?.user) throw new Error("Not signed in");
+  const { error } = await supabase.from("wins").insert({ user_id: u.user.id, text, tag });
+  if (error) throw error;
+}
+
+async function deleteWin(id) {
+  const { error } = await supabase.from("wins").delete().eq("id", id);
+  if (error) throw error;
+}
 
 /** ========= CORRELATIONS (last 30d) ========= */
 function computeCorrelations(days){
@@ -322,145 +344,151 @@ export default function App(){
       </div>
 
       {/* Tabs */}
-      <div className="mt-4 flex gap-2">
-        {["today","trends"].map(t => (
+     <div className="mt-4 flex gap-2">
+        {["today","trends","wins"].map(t => (
           <button key={t} onClick={()=>setTab(t)}
             className="rounded-full px-4 py-1.5 text-sm border"
             style={{ borderColor: tab===t?tokens.primaryDark:tokens.divider, background: tab===t?tokens.primaryDark:"transparent", color: tokens.text }}>
-            {t==="today"?"Today":"Trends"}
+            {t==="today" ? "Today" : t==="trends" ? "Trends" : "Wins"}
           </button>
         ))}
       </div>
 
-      {tab==="today" ? (
-        <>
-          <div className="mt-1 text-sm" style={{ color: tokens.textSecondary }}>{micro}</div>
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            <Tile title="Physical"  value={today.s.phys} subtext={todaySub.physical}  series={physSeries7} />
-            <Tile title="Mental"    value={today.s.ment} subtext={todaySub.mental}    series={mentSeries7} />
-            <Tile title="Work"      value={today.s.work} subtext={todaySub.work}      series={workSeries7} />
-            <Tile title="Joy"       value={today.s.joy}  subtext={todaySub.joy}       series={joySeries7} />
-            <Tile title="Financial" value={today.s.fin}  subtext={todaySub.financial} series={finSeries7} />
-          </div>
+{/* --- VIEWS --- */}
+{tab === "today" ? (
+  <>
+    <div className="mt-1 text-sm" style={{ color: tokens.textSecondary }}>{micro}</div>
+    <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <Tile title="Physical"  value={today.s.phys} subtext={todaySub.physical}  series={physSeries7} />
+      <Tile title="Mental"    value={today.s.ment} subtext={todaySub.mental}    series={mentSeries7} />
+      <Tile title="Work"      value={today.s.work} subtext={todaySub.work}      series={workSeries7} />
+      <Tile title="Joy"       value={today.s.joy}  subtext={todaySub.joy}       series={joySeries7} />
+      <Tile title="Financial" value={today.s.fin}  subtext={todaySub.financial} series={finSeries7} />
+    </div>
 
-          {/* Actions bar */}
-          <div className="sticky bottom-3 mt-6 flex gap-3 flex-wrap md:pr-28">
-            <button
-              onClick={()=>{ setDraftAM(draftAMInit()); setShowAM(true); }}
-              className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
-              style={{ background: tokens.primaryDark, color: tokens.text }}
-            >
-              AM LOG
-            </button>
+    {/* Actions bar */}
+    <div className="sticky bottom-3 mt-6 flex gap-3 flex-wrap md:pr-28">
+      <button
+        onClick={()=>{ setDraftAM(draftAMInit()); setShowAM(true); }}
+        className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
+        style={{ background: tokens.primaryDark, color: tokens.text }}
+      >
+        AM LOG
+      </button>
 
-            <button
-              onClick={()=>{ setDraftPM(draftPMInit()); setShowPM(true); }}
-              className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
-              style={{ background: tokens.primaryDark, color: tokens.text }}
-            >
-              PM LOG
-            </button>
+      <button
+        onClick={()=>{ setDraftPM(draftPMInit()); setShowPM(true); }}
+        className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
+        style={{ background: tokens.primaryDark, color: tokens.text }}
+      >
+        PM LOG
+      </button>
 
-            {/* + WIN back on mobile */}
-            <button
-              onClick={async()=>{
-                const text = window.prompt("Win text:");
-                if (!text) return;
-                try { await addWinServer(text); alert("Win saved ✨"); } catch (e) { alert(e.message); }
-              }}
-              className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
-              style={{ background: tokens.primaryDark, color: tokens.text }}
-            >
-              + WIN
-            </button>
-          </div>
+      <button
+        onClick={async()=>{
+          const text = window.prompt("Win text:");
+          if (!text) return;
+          try { await addWinServer(text); alert("Win saved ✨"); } catch (e) { alert(e.message); }
+        }}
+        className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
+        style={{ background: tokens.primaryDark, color: tokens.text }}
+      >
+        + WIN
+      </button>
+    </div>
 
-
-          {/* AM & PM Sheets */}
-          {showAM && (
-            <Sheet title="AM Check-in" onClose={()=>setShowAM(false)} onSave={async()=>{
-              const patch = { energyAM:draftAM.energyAM, moodAM:draftAM.moodAM, sleepHours:draftAM.sleepHours, restingHr:draftAM.restingHr };
-              upsertTodayLocal(patch); try{ await upsertEntryServer(today.d.date, "AM", patch); }catch(e){ console.error(e); } setShowAM(false);
-            }}>
-              <Field label={`Energy (${draftAM.energyAM})`}><Slider value={draftAM.energyAM} onChange={e=>setDraftAM({...draftAM,energyAM:+e.target.value})}/></Field>
-              <Field label={`Mood (${draftAM.moodAM})`}><Slider value={draftAM.moodAM} onChange={e=>setDraftAM({...draftAM,moodAM:+e.target.value})}/></Field>
-              <Field label="Sleep hours"><NumberInput value={draftAM.sleepHours} onChange={e=>setDraftAM({...draftAM,sleepHours:+e.target.value})}/></Field>
-              <Field label="Resting HR"><NumberInput value={draftAM.restingHr} onChange={e=>setDraftAM({...draftAM,restingHr:+e.target.value})}/></Field>
-            </Sheet>
-          )}
-          {showPM && (
-            <Sheet title="PM Check-in" onClose={()=>setShowPM(false)} onSave={async()=>{
-              const patch = { moodPM:draftPM.moodPM, focus:draftPM.focus, spiralCount:draftPM.spiralCount, nf:draftPM.nf, nfProtocol:draftPM.nfProtocol,
-                              commitmentsMetPct:draftPM.commitmentsMetPct, winsCount:draftPM.winsCount, productivity:draftPM.productivity,
-                              animalBand:draftPM.animalBand, creativity:draftPM.creativity, playfulness:draftPM.playfulness,
-                              stepsBand:draftPM.stepsBand, spendState:draftPM.spendState, cashClarity:draftPM.cashClarity };
-              upsertTodayLocal(patch); try{ await upsertEntryServer(today.d.date, "PM", patch); }catch(e){ console.error(e); } setShowPM(false);
-            }}>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label={`Mood (${draftPM.moodPM})`}><Slider value={draftPM.moodPM} onChange={e=>setDraftPM({...draftPM,moodPM:+e.target.value})}/></Field>
-                <Field label={`Focus (${draftPM.focus})`}><Slider value={draftPM.focus} onChange={e=>setDraftPM({...draftPM,focus:+e.target.value})}/></Field>
-                <Field label="Spirals"><Select value={draftPM.spiralCount} onChange={e=>setDraftPM({...draftPM,spiralCount:+e.target.value})} options={[0,1,2,3]}/></Field>
-                <Field label="NF today?"><YesNo value={draftPM.nf} onChange={v=>setDraftPM({...draftPM,nf:v})}/></Field>
-                <Field label="NF protocol (optional)"><input value={draftPM.nfProtocol} onChange={e=>setDraftPM({...draftPM,nfProtocol:e.target.value})} className="rounded-lg px-3 py-2 bg-transparent border" style={{borderColor:tokens.divider,color:tokens.text}}/></Field>
-                <Field label="Commitments met %"><NumberInput value={draftPM.commitmentsMetPct} onChange={e=>setDraftPM({...draftPM,commitmentsMetPct:+e.target.value})}/></Field>
-                <Field label="Wins count"><NumberInput value={draftPM.winsCount} onChange={e=>setDraftPM({...draftPM,winsCount:+e.target.value})}/></Field>
-                <Field label={`Productivity (${draftPM.productivity})`}><Slider value={draftPM.productivity} onChange={e=>setDraftPM({...draftPM,productivity:+e.target.value})}/></Field>
-                <Field label="Animal time (min band)"><Select value={draftPM.animalBand} onChange={e=>setDraftPM({...draftPM,animalBand:+e.target.value})} options={[0,5,15,30,60]}/></Field>
-                <Field label="Creativity"><YesNo value={draftPM.creativity} onChange={v=>setDraftPM({...draftPM,creativity:v})}/></Field>
-                <Field label={`Playfulness (${draftPM.playfulness})`}><Slider value={draftPM.playfulness} onChange={e=>setDraftPM({...draftPM,playfulness:+e.target.value})}/></Field>
-                <Field label="Steps band"><Select value={draftPM.stepsBand} onChange={e=>setDraftPM({...draftPM,stepsBand:e.target.value})} options={["0-3k","3-7k","7-10k","10k+"]}/></Field>
-                <Field label="Spend vs plan"><Select value={draftPM.spendState} onChange={e=>setDraftPM({...draftPM,spendState:e.target.value})} options={["Under","On","Over"]}/></Field>
-                <Field label="Cash clarity"><YesNo value={draftPM.cashClarity} onChange={v=>setDraftPM({...draftPM,cashClarity:v})}/></Field>
-              </div>
-            </Sheet>
-          )}
-        </>
-      ) : (
-        /* ============ TRENDS VIEW ============ */
-        <div className="mt-5 grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Life */}
-          <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
-            <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Life Score (last 30 days)</div>
-            <Line data={trendsData.life} options={chartOpts} />
-          </div>
-          {/* Domains */}
-          <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
-            <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Physical</div>
-            <Line data={trendsData.phys} options={chartOpts} />
-          </div>
-          <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
-            <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Mental</div>
-            <Line data={trendsData.ment} options={chartOpts} />
-          </div>
-          <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
-            <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Work</div>
-            <Line data={trendsData.work} options={chartOpts} />
-          </div>
-          <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
-            <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Joy</div>
-            <Line data={trendsData.joy} options={chartOpts} />
-          </div>
-          <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
-            <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Financial</div>
-            <Line data={trendsData.fin} options={chartOpts} />
-          </div>
-
-          {/* Correlations */}
-          <div className="xl:col-span-2 rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}` }}>
-            <div className="mb-3 text-sm" style={{ color: tokens.textSecondary }}>Correlation highlights (last 30 days)</div>
-            <div className="flex flex-wrap gap-2">
-              {chips.length === 0 ? (
-                <div className="text-sm" style={{ color: tokens.textMuted }}>Not enough data yet — keep logging, love.</div>
-              ) : chips.map(c => (
-                <span key={c.id} className="rounded-full px-3 py-1 text-xs"
-                  style={{ background: c.positive ? tokens.primaryDark : tokens.warn, color: tokens.text }}>
-                  {c.label} • n={c.n}
-                </span>
-              ))}
-            </div>
-          </div>
+    {/* AM & PM Sheets */}
+    {showAM && (
+      <Sheet title="AM Check-in" onClose={()=>setShowAM(false)} onSave={async()=>{
+        const patch = { energyAM:draftAM.energyAM, moodAM:draftAM.moodAM, sleepHours:draftAM.sleepHours, restingHr:draftAM.restingHr };
+        upsertTodayLocal(patch); try{ await upsertEntryServer(today.d.date, "AM", patch); }catch(e){ console.error(e); } setShowAM(false);
+      }}>
+        <Field label={`Energy (${draftAM.energyAM})`}><Slider value={draftAM.energyAM} onChange={e=>setDraftAM({...draftAM,energyAM:+e.target.value})}/></Field>
+        <Field label={`Mood (${draftAM.moodAM})`}><Slider value={draftAM.moodAM} onChange={e=>setDraftAM({...draftAM,moodAM:+e.target.value})}/></Field>
+        <Field label="Sleep hours"><NumberInput value={draftAM.sleepHours} onChange={e=>setDraftAM({...draftAM,sleepHours:+e.target.value})}/></Field>
+        <Field label="Resting HR"><NumberInput value={draftAM.restingHr} onChange={e=>setDraftAM({...draftAM,restingHr:+e.target.value})}/></Field>
+      </Sheet>
+    )}
+    {showPM && (
+      <Sheet title="PM Check-in" onClose={()=>setShowPM(false)} onSave={async()=>{
+        const patch = { moodPM:draftPM.moodPM, focus:draftPM.focus, spiralCount:draftPM.spiralCount, nf:draftPM.nf, nfProtocol:draftPM.nfProtocol,
+                        commitmentsMetPct:draftPM.commitmentsMetPct, winsCount:draftPM.winsCount, productivity:draftPM.productivity,
+                        animalBand:draftPM.animalBand, creativity:draftPM.creativity, playfulness:draftPM.playfulness,
+                        stepsBand:draftPM.stepsBand, spendState:draftPM.spendState, cashClarity:draftPM.cashClarity };
+        upsertTodayLocal(patch); try{ await upsertEntryServer(today.d.date, "PM", patch); }catch(e){ console.error(e); } setShowPM(false);
+      }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label={`Mood (${draftPM.moodPM})`}><Slider value={draftPM.moodPM} onChange={e=>setDraftPM({...draftPM,moodPM:+e.target.value})}/></Field>
+          <Field label={`Focus (${draftPM.focus})`}><Slider value={draftPM.focus} onChange={e=>setDraftPM({...draftPM,focus:+e.target.value})}/></Field>
+          <Field label="Spirals"><Select value={draftPM.spiralCount} onChange={e=>setDraftPM({...draftPM,spiralCount:+e.target.value})} options={[0,1,2,3]}/></Field>
+          <Field label="NF today?"><YesNo value={draftPM.nf} onChange={v=>setDraftPM({...draftPM,nf:v})}/></Field>
+          <Field label="NF protocol (optional)"><input value={draftPM.nfProtocol} onChange={e=>setDraftPM({...draftPM,nfProtocol:e.target.value})} className="rounded-lg px-3 py-2 bg-transparent border" style={{borderColor:tokens.divider,color:tokens.text}}/></Field>
+          <Field label="Commitments met %"><NumberInput value={draftPM.commitmentsMetPct} onChange={e=>setDraftPM({...draftPM,commitmentsMetPct:+e.target.value})}/></Field>
+          <Field label="Wins count"><NumberInput value={draftPM.winsCount} onChange={e=>setDraftPM({...draftPM,winsCount:+e.target.value})}/></Field>
+          <Field label={`Productivity (${draftPM.productivity})`}><Slider value={draftPM.productivity} onChange={e=>setDraftPM({...draftPM,productivity:+e.target.value})}/></Field>
+          <Field label="Animal time (min band)"><Select value={draftPM.animalBand} onChange={e=>setDraftPM({...draftPM,animalBand:+e.target.value})} options={[0,5,15,30,60]}/></Field>
+          <Field label="Creativity"><YesNo value={draftPM.creativity} onChange={v=>setDraftPM({...draftPM,creativity:v})}/></Field>
+          <Field label={`Playfulness (${draftPM.playfulness})`}><Slider value={draftPM.playfulness} onChange={e=>setDraftPM({...draftPM,playfulness:+e.target.value})}/></Field>
+          <Field label="Steps band"><Select value={draftPM.stepsBand} onChange={e=>setDraftPM({...draftPM,stepsBand:e.target.value})} options={["0-3k","3-7k","7-10k","10k+"]}/></Field>
+          <Field label="Spend vs plan"><Select value={draftPM.spendState} onChange={e=>setDraftPM({...draftPM,spendState:e.target.value})} options={["Under","On","Over"]}/></Field>
+          <Field label="Cash clarity"><YesNo value={draftPM.cashClarity} onChange={v=>setDraftPM({...draftPM,cashClarity:v})}/></Field>
         </div>
-      )}
+      </Sheet>
+    )}
+  </>
+) : tab === "wins" ? (
+  <Wins
+    tokens={tokens}
+    fetchWins={fetchWinsNDays}
+    addWin={addWin}
+    deleteWin={deleteWin}
+  />
+) : (
+  /* ============ TRENDS VIEW ============ */
+  <div className="mt-5 grid grid-cols-1 xl:grid-cols-2 gap-6">
+    {/* Life */}
+    <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
+      <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Life Score (last 30 days)</div>
+      <Line data={trendsData.life} options={chartOpts} />
+    </div>
+    {/* Domains */}
+    <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
+      <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Physical</div>
+      <Line data={trendsData.phys} options={chartOpts} />
+    </div>
+    <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
+      <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Mental</div>
+      <Line data={trendsData.ment} options={chartOpts} />
+    </div>
+    <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
+      <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Work</div>
+      <Line data={trendsData.work} options={chartOpts} />
+    </div>
+    <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
+      <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Joy</div>
+      <Line data={trendsData.joy} options={chartOpts} />
+    </div>
+    <div className="rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}`, height: 260 }}>
+      <div className="mb-2 text-sm" style={{ color: tokens.textSecondary }}>Financial</div>
+      <Line data={trendsData.fin} options={chartOpts} />
+    </div>
+
+    {/* Correlations */}
+    <div className="xl:col-span-2 rounded-2xl p-4" style={{ background: tokens.surface, border:`1px solid ${tokens.primaryDark}` }}>
+      <div className="mb-3 text-sm" style={{ color: tokens.textSecondary }}>Correlation highlights (last 30 days)</div>
+      <div className="flex flex-wrap gap-2">
+        {chips.length === 0 ? (
+          <div className="text-sm" style={{ color: tokens.textMuted }}>Not enough data yet — keep logging, love.</div>
+        ) : chips.map(c => (
+          <span key={c.id} className="rounded-full px-3 py-1 text-xs"
+            style={{ background: c.positive ? tokens.primaryDark : tokens.warn, color: tokens.text }}>
+            {c.label} • n={c.n}
+          </span>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

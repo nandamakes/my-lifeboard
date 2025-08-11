@@ -348,7 +348,7 @@ export default function App(){
       </div>
 
       {/* Tabs */}
-     <div className="mt-4 flex gap-2">
+     <div className="mt-4 hidden md:flex gap-2">
         {["today","trends","wins","insights"].map(t => (
          <button 
             key={t} 

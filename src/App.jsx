@@ -249,27 +249,40 @@ export default function App(){
   },[]);
 
   const [days,setDays]=useState(seed);
-  useEffect(()=>{ (async()=>{
-    if(!session?.user) return;
-    const rows = await fetchEntriesLast30Server().catch(()=>[]);
-    if(rows.length){
-      const byDate={};
-      for(const r of rows){ byDate[r.date] ||= { date:r.date };
-        Object.assign(byDate[r.date],
-          r.period==="AM" ? { energyAM:r.data.energyAM, moodAM:r.data.moodAM, sleepHours:r.data.sleepHours, restingHr:r.data.restingHr }
-                          : { moodPM:r.data.moodPM, focus:r.data.focus, spiralCount:r.data.spiralCount, nf:r.data.nf, nfProtocol:r.data.nfProtocol,
-                              commitmentsMetPct:r.data.commitmentsMetPct, winsCount:r.data.winsCount, productivity:r.data.productivity,
-                              animalBand:r.data.animalBand, creativity:r.data.creativity, playfulness:r.data.playfulness,
-                              stepsBand:r.data.stepsBand, spendState:r.data.spendState, cashClarity:r.data.cashClarity });
-      }
-      const merged=Object.values(byDate).sort((a,b)=>a.date.localeCompare(b.date));
-      setDays(prev=>{
-        const existing=new Set(prev.map(d=>d.date));
-        const insert=merged.filter(d=>!existing.has(d.date));
-        return [...prev, ...insert].sort((a,b)=>a.date.localeCompare(b.date));
-      });
+  useEffect(() => {
+  (async () => {
+    if (!session?.user) return;
+
+    const rows = await fetchEntriesLast30Server().catch(() => []);
+    if (!rows.length) return;
+
+    // Build per-date object from server
+    const byDate = {};
+    for (const r of rows) {
+      byDate[r.date] ??= { date: r.date };
+      Object.assign(
+        byDate[r.date],
+        r.period === "AM"
+          ? { energyAM: r.data.energyAM, moodAM: r.data.moodAM, sleepHours: r.data.sleepHours, restingHr: r.data.restingHr }
+          : { moodPM: r.data.moodPM, focus: r.data.focus, spiralCount: r.data.spiralCount, nf: r.data.nf, nfProtocol: r.data.nfProtocol,
+              commitmentsMetPct: r.data.commitmentsMetPct, winsCount: r.data.winsCount, productivity: r.data.productivity,
+              animalBand: r.data.animalBand, creativity: r.data.creativity, playfulness: r.data.playfulness,
+              stepsBand: r.data.stepsBand, spendState: r.data.spendState, cashClarity: r.data.cashClarity }
+      );
     }
-  })(); },[session]);
+
+    const fromServer = Object.values(byDate).sort((a,b) => a.date.localeCompare(b.date));
+
+    // Server rows replace seed for overlapping dates (server wins)
+    setDays(prev => {
+      const prevMap = Object.fromEntries(prev.map(d => [d.date, d]));
+      const merged = fromServer.map(d => ({ ...prevMap[d.date], ...d })); // server overrides
+      const extras = prev.filter(d => !byDate[d.date]); // any non-overlapping leftovers
+      return [...merged, ...extras].sort((a,b) => a.date.localeCompare(b.date));
+    });
+  })();
+  }, [session]);
+
 
   // Scoring prep
   const last30 = days.slice(-30);

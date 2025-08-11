@@ -115,8 +115,6 @@ function Sheet({ title, children, onClose, onSave }) {
           <button onClick={onSave} className="rounded-xl px-4 py-2" style={{ background: tokens.primaryDark, color: tokens.text }}>Save</button>
         </div>
       </div>
-            {/* Quick Add FAB (mobile & desktop) */}
-      <QuickFab onClick={() => setShowQuick(true)} />
     </div>
   );
 }
@@ -372,6 +370,8 @@ export default function App(){
   return (
     <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8" style={{ background: tokens.bg, color: tokens.text, fontFamily: "ui-sans-serif, system-ui" }}>
       {/* Header */}
+      {/* Quick Add FAB (mobile & desktop) */}
+      <QuickFab onClick={() => setShowQuick(true)} />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="text-2xl sm:text-3xl font-semibold">My Lifeboard</div>
         <div className="flex items-center gap-3 ml-auto">
@@ -448,8 +448,8 @@ export default function App(){
                 <Field label="Cash clarity"><YesNo value={draftPM.cashClarity} onChange={v=>setDraftPM({...draftPM,cashClarity:v})}/></Field>
               </div>
             </Sheet>
-
-                        {/* Quick Add Sheet */}
+          )}
+             {/* Quick Add Sheet */}
             {showQuick && (
               <Sheet title="Quick Add" onClose={() => setShowQuick(false)} onSave={saveQuickAdd}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -470,8 +470,7 @@ export default function App(){
                   Saving to <b>{periodNow()}</b> for <b>{today?.d?.date || todayISO()}</b>
                 </div>
               </Sheet>
-            
-          )}
+            )}
         </>
       ) : (
         /* ============ TRENDS VIEW ============ */

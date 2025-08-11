@@ -5,6 +5,8 @@ import "chart.js/auto";
 import * as stats from "simple-statistics";
 import Wins from "./components/Wins.jsx";
 import Insights from "./components/Insights.jsx";
+import BottomNav from "./components/BottomNav.jsx";
+import WinSheet from "./components/WinSheet.jsx";
 
 /** ========= SUPABASE CLIENT ========= */
 const supabase = createClient(
@@ -229,7 +231,8 @@ export default function App(){
   const [session,setSession]=useState(null);
   const [email,setEmail]=useState(""); const [status,setStatus]=useState("");
   const [tab,setTab]=useState("today"); // "today" | "trends"
-
+  useEffect(()=>{ window.scrollTo({ top: 0, behavior: "smooth" }); }, [tab]);
+  
   useEffect(()=>{ supabase.auth.getSession().then(({data:{session}})=>setSession(session));
     const { data: sub } = supabase.auth.onAuthStateChange((_e,s)=>setSession(s));
     return ()=> sub.subscription.unsubscribe();
@@ -271,7 +274,7 @@ export default function App(){
                      : "Stormy but steerable. One kind habit, then rest.", [lifeScore]);
 
   // AM/PM sheets (same as before)
-  const [showAM,setShowAM]=useState(false), [showPM,setShowPM]=useState(false);
+  const [showAM,setShowAM]=useState(false), [showPM,setShowPM]=useState(false), [showWin, setShowWin] = useState(false);
   const draftAMInit = ()=>({ energyAM: today.d?.energyAM ?? 5, moodAM: today.d?.moodAM ?? 5, sleepHours: today.d?.sleepHours ?? 7.0, restingHr: today.d?.restingHr ?? HR_BASELINE });
   const draftPMInit = ()=>({ moodPM: today.d?.moodPM ?? 5, focus: today.d?.focus ?? 5, spiralCount: today.d?.spiralCount ?? 0, nf: !!today.d?.nf, nfProtocol: today.d?.nfProtocol || "",
                              commitmentsMetPct: today.d?.commitmentsMetPct ?? 0, winsCount: today.d?.winsCount ?? 0, productivity: today.d?.productivity ?? 5,
@@ -332,7 +335,7 @@ export default function App(){
   const chips = computeCorrelations(days);
 
   return (
-    <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8 pb-20" style={{ background: tokens.bg, color: tokens.text, fontFamily: "ui-sans-serif, system-ui" }}>
+    <div className="min-h-screen w-full p-4 sm:p-6 lg:p-8 pb-32" style={{ background: tokens.bg, color: tokens.text, fontFamily: "ui-sans-serif, system-ui" }}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="text-2xl sm:text-3xl font-semibold">My Lifeboard</div>
@@ -399,11 +402,7 @@ export default function App(){
       </button>
 
       <button
-        onClick={async()=>{
-          const text = window.prompt("Win text:");
-          if (!text) return;
-          try { await addWinServer(text); alert("Win saved ✨"); } catch (e) { alert(e.message); }
-        }}
+        onClick={()=> setShowWin(true)}
         className="rounded-xl px-4 py-2 text-sm shadow active:scale-95"
         style={{ background: tokens.primaryDark, color: tokens.text }}
       >
@@ -411,11 +410,13 @@ export default function App(){
       </button>
     </div>
 
-    {/* AM & PM Sheets */}
+    {/* AM & PM & WIN Sheets */}
     {showAM && (
       <Sheet title="AM Check-in" onClose={()=>setShowAM(false)} onSave={async()=>{
         const patch = { energyAM:draftAM.energyAM, moodAM:draftAM.moodAM, sleepHours:draftAM.sleepHours, restingHr:draftAM.restingHr };
-        upsertTodayLocal(patch); try{ await upsertEntryServer(today.d.date, "AM", patch); }catch(e){ console.error(e); } setShowAM(false);
+        upsertTodayLocal(patch);
+        try { await upsertEntryServer(today.d.date, "AM", patch); } catch(e){ console.error(e); }
+        setShowAM(false);
       }}>
         <Field label={`Energy (${draftAM.energyAM})`}><Slider value={draftAM.energyAM} onChange={e=>setDraftAM({...draftAM,energyAM:+e.target.value})}/></Field>
         <Field label={`Mood (${draftAM.moodAM})`}><Slider value={draftAM.moodAM} onChange={e=>setDraftAM({...draftAM,moodAM:+e.target.value})}/></Field>
@@ -423,13 +424,16 @@ export default function App(){
         <Field label="Resting HR"><NumberInput value={draftAM.restingHr} onChange={e=>setDraftAM({...draftAM,restingHr:+e.target.value})}/></Field>
       </Sheet>
     )}
+
     {showPM && (
       <Sheet title="PM Check-in" onClose={()=>setShowPM(false)} onSave={async()=>{
         const patch = { moodPM:draftPM.moodPM, focus:draftPM.focus, spiralCount:draftPM.spiralCount, nf:draftPM.nf, nfProtocol:draftPM.nfProtocol,
                         commitmentsMetPct:draftPM.commitmentsMetPct, winsCount:draftPM.winsCount, productivity:draftPM.productivity,
                         animalBand:draftPM.animalBand, creativity:draftPM.creativity, playfulness:draftPM.playfulness,
                         stepsBand:draftPM.stepsBand, spendState:draftPM.spendState, cashClarity:draftPM.cashClarity };
-        upsertTodayLocal(patch); try{ await upsertEntryServer(today.d.date, "PM", patch); }catch(e){ console.error(e); } setShowPM(false);
+        upsertTodayLocal(patch);
+        try { await upsertEntryServer(today.d.date, "PM", patch); } catch(e){ console.error(e); }
+        setShowPM(false);
       }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label={`Mood (${draftPM.moodPM})`}><Slider value={draftPM.moodPM} onChange={e=>setDraftPM({...draftPM,moodPM:+e.target.value})}/></Field>
@@ -449,6 +453,24 @@ export default function App(){
         </div>
       </Sheet>
     )}
+
+    {showWin && (
+      <WinSheet
+        tokens={tokens}
+        onClose={()=>setShowWin(false)}
+        onSave={async (text, tag) => {
+          if (!text) return;
+          try {
+            await addWinServer(text, tag);
+            setShowWin(false);
+            alert("Win saved ✨");
+          } catch (e) {
+            alert(e.message);
+          }
+        }}
+      />
+    )}
+
   </>
 ) : tab === "wins" ? (
   <Wins
@@ -504,7 +526,8 @@ export default function App(){
       </div>
     </div>
   </div>
-)}
+    )}
+    <BottomNav tab={tab} setTab={setTab} tokens={tokens} />
     </div>
   );
 }

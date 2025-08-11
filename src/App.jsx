@@ -228,6 +228,16 @@ function computeCorrelations(days){
 
 /** ========= MAIN ========= */
 export default function App(){
+  
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search)
+  const action = params.get('action')
+  if (action === 'am') setShowAM(true)
+  if (action === 'pm') setShowPM(true)
+  if (action === 'win') setShowWin(true)
+  if (action) history.replaceState({}, '', window.location.pathname)
+  }, [])
+
   const [session,setSession]=useState(null);
   const [email,setEmail]=useState(""); const [status,setStatus]=useState("");
   const [tab,setTab]=useState("today"); // "today" | "trends"

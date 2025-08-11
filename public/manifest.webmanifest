@@ -1,0 +1,19 @@
+{
+  "name": "My Lifeboard",
+  "short_name": "Lifeboard",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1E1B1B",
+  "theme_color": "#B56576",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "AM Log", "url": "/?action=am" },
+    { "name": "PM Log", "url": "/?action=pm" },
+    { "name": "Add Win", "url": "/?action=win" }
+  ]
+}
